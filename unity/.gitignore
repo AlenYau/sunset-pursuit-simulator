@@ -1,0 +1,17 @@
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+/MemoryCaptures/
+/Tests/bin/
+/Tests/obj/
+*.csproj
+!/Tests/CoreParity.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd

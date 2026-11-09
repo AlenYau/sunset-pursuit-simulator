@@ -6,6 +6,8 @@ An interactive, browser-based aviation sunset simulator with astronomical solar 
 
 **Live site／線上版本:** [Open the simulator／開啟模擬器](https://sunset-pursuit-simulator-3d.alenyau.chatgpt.site/)
 
+**Unity port／Unity 移植版:** [Source and current verification status／原始碼與目前驗證狀態](unity/README.md). This is an experimental project; the live site still runs the verified Three.js build.／此版本仍在開發，線上網站繼續使用已驗證的 Three.js 版本。
+
 ## English
 
 ### Requirements
