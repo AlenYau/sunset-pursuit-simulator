@@ -8,8 +8,10 @@
   <ItemGroup>
     <Compile Include="../Assets/Scripts/SimulationCore.cs" Link="SimulationCore.cs" />
     <Compile Include="../Assets/Scripts/FlightPlanner.cs" Link="FlightPlanner.cs" />
+    <Compile Include="../Assets/Scripts/Geography.cs" Link="Geography.cs" />
     <Compile Include="../Assets/Scripts/ThirdParty/astronomy.cs" Link="astronomy.cs" />
     <None Include="reference.json" CopyToOutputDirectory="Always" />
     <None Include="../Assets/Resources/airports.json" Link="airports.json" CopyToOutputDirectory="Always" />
+    <None Include="../Assets/Resources/geography.json" Link="geography.json" CopyToOutputDirectory="Always" />
   </ItemGroup>
 </Project>

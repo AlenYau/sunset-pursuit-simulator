@@ -51,6 +51,17 @@ foreach (bool procedural in new[] { false,true })
 }
 Console.WriteLine("PASS direct and procedural JFK-LHR route checks");
 
+var geo=JsonSerializer.Deserialize<GeographyData>(File.ReadAllText(Path.Combine(AppContext.BaseDirectory,"geography.json")),
+    new JsonSerializerOptions { IncludeFields=true })!;
+foreach(var (lat,lon,expected) in new (double,double,string)[] {
+    (42.5,-73,"美國東北部"), (51.2,-2.5,"英國南部"), (48.5,-4.5,"法國西北部"),
+    (43.5,9,"利古里亞海"), (56,3,"北海"), (15,114,"南海") })
+{
+    string actual=Geography.Lookup(geo,lat,lon);
+    if(actual!=expected)throw new Exception($"Geography {lat},{lon}: {actual} != {expected}");
+}
+Console.WriteLine("PASS 6 country and sea labels");
+
 void Check(string name, double actual, double expected, double tolerance)
 {
     if (double.IsNaN(actual) || Math.Abs(actual - expected) > tolerance)

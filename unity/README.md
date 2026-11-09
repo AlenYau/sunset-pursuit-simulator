@@ -17,7 +17,7 @@ The only external source included is Astronomy Engine C# under its MIT license. 
 ## Controls · 操作
 
 - Drag the central view to look around; use the west view or sun tracking controls to recenter. / 拖曳畫面中央旋轉視角；可一鍵返回正西或追蹤太陽。
-- Right panel: altitude 100–360,000 ft, ground speed 0–4,000 kt, latitude, longitude, heading, vertical speed, 13 aircraft references, five cloud-cover levels, four quality levels, FOV, exposure, UTC, experiments, ICAO/IATA airport route and autopilot. / 右側面板提供飛行、環境、時間、機型與機場航線設定。
+- Right panel: altitude 100–360,000 ft, ground speed 0–4,000 kt, latitude, longitude, heading, vertical speed, 13 aircraft references, five cloud-cover levels, four quality levels, FOV, exposure, UTC, experiments, ICAO/IATA airport route and autopilot. The left telemetry labels the approximate country or sea at the current coordinates. / 右側面板提供飛行、環境、時間、機型與機場航線設定；左側顯示目前經緯度約略對應的國家或海域。
 - Bottom: play, reverse, step, speed multiplier, and a 24-hour UTC slider. / 底部可播放、倒放、單步、調整倍率及拖曳 24 小時 UTC 時間軸。
 - `Space`: play/pause. `F`: immersive view. `Esc`: restore UI. / `Space` 暫停／播放；`F` 沉浸模式；`Esc` 顯示介面。
 
@@ -35,9 +35,9 @@ With .NET 10 installed, run:
 dotnet run --project Tests/CoreParity.csproj
 ```
 
-The harness compares the C# core against reference values generated from the original TypeScript implementation: 65 astronomy and movement assertions across 9 scenarios, plus direct and procedural JFK–LHR route checks. Cases include equinox, altitude changes, westbound pursuit, 85°N summer/winter, crossing the date line, polar travel, climbing, and sunset prediction. The fixture can be regenerated with `node Tests/generate-reference.mjs` when the adjacent browser checkout has `npm ci` dependencies installed.
+The harness compares the C# core against reference values generated from the original TypeScript implementation: 65 astronomy and movement assertions across 9 scenarios, direct and procedural JFK–LHR route checks, and six country/sea labels. Cases include equinox, altitude changes, westbound pursuit, 85°N summer/winter, crossing the date line, polar travel, climbing, and sunset prediction. The fixture can be regenerated with `node Tests/generate-reference.mjs` when the browser checkout has `npm ci` dependencies installed. `python3 Tools/prepare_geography.py` regenerates the Unity-compatible geography data from the browser source.
 
-已以原版 TypeScript 產生的基準值核對 C# 核心：9 組情境、65 項天文與位移檢查，以及 JFK–LHR 直飛與程序模擬航線檢查。
+已以原版 TypeScript 產生的基準值核對 C# 核心：9 組情境、65 項天文與位移檢查，以及 JFK–LHR 直飛、程序模擬航線和 6 項國家／海域標示檢查。
 
 ## Current verification and limits · 目前驗證範圍與限制
 

@@ -19,6 +19,9 @@ namespace SunsetPursuit
         private int quality = 1, cloudIndex = 2, aircraftIndex;
         private bool cameraMode;
         private Airport[] airports;
+        private GeographyData geography;
+        private string locationName = "位置未知";
+        private double locationLat = double.NaN, locationLon = double.NaN;
         private FlightPlan plan;
         private bool autopilot, proceduralRoute = true;
         private string fromCode = "JFK", toCode = "LHR", routeError = "";
@@ -60,6 +63,8 @@ namespace SunsetPursuit
             cloudVolume = Resources.Load<Texture2D>("cloud-volume");
             var airportAsset = Resources.Load<TextAsset>("airports");
             if (airportAsset != null) airports = JsonUtility.FromJson<AirportList>(airportAsset.text).items;
+            var geographyAsset = Resources.Load<TextAsset>("geography");
+            if (geographyAsset != null) geography = JsonUtility.FromJson<GeographyData>(geographyAsset.text);
             state = new FlightState {
                 Latitude = 40, Longitude = 0, AltitudeFt = 35000,
                 GroundSpeedKt = 450, HeadingDeg = 270, RouteMode = RouteMode.ConstantHeading,
@@ -109,6 +114,11 @@ namespace SunsetPursuit
         private void UpdateModel(bool forcePrediction)
         {
             solar = SimulationCore.SolarMetrics(state);
+            if (forcePrediction || Math.Abs(state.Latitude-locationLat) > .01 || Math.Abs(state.Longitude-locationLon) > .01 || double.IsNaN(locationLat))
+            {
+                locationName = Geography.Lookup(geography,state.Latitude,state.Longitude);
+                locationLat=state.Latitude;locationLon=state.Longitude;
+            }
             if (forcePrediction || predictionAge > 10.0f)
             {
                 sunset = SimulationCore.PredictSunset(state);
@@ -157,7 +167,7 @@ namespace SunsetPursuit
             atmosphere.SetFloat("_CloudCover",(float)CoverValues[cloudIndex]);
             atmosphere.SetFloat("_UtcSeconds",(float)(state.Utc-TimestampEpoch).TotalSeconds);
             atmosphere.SetFloat("_CameraMode",cameraMode?1:0);
-            atmosphere.SetVector("_CloudAnchor",cloudAnchor);
+            atmosphere.SetVector("_CloudAnchor",new Vector4(cloudAnchor.x,cloudAnchor.y,0,0));
             atmosphere.SetInt("_SkySteps",skySteps[quality]);
             atmosphere.SetInt("_CloudSteps",cloudSteps[quality]);
             if (earth != null) atmosphere.SetTexture("_EarthColor",earth);
@@ -186,6 +196,7 @@ namespace SunsetPursuit
             GUILayout.Label("SUNSET PURSUIT  ·  UNITY PORT");
             GUILayout.Label($"ALT {state.AltitudeFt:F0} ft   GS {state.GroundSpeedKt:F0} kt");
             GUILayout.Label($"LAT {state.Latitude:F3}°  LON {state.Longitude:F3}°  HDG {state.HeadingDeg:F0}°");
+            GUILayout.Label(locationName);
             GUILayout.Label($"UTC {state.Utc:yyyy-MM-dd HH:mm:ss}");
             GUILayout.Space(8);
             GUILayout.Label($"SUN AZ {solar.Azimuth:F2}°   EL {solar.ApparentElevation:F3}°");
@@ -316,13 +327,16 @@ namespace SunsetPursuit
             GUILayout.BeginHorizontal();
             GUILayout.Label(label,GUILayout.Width(168));
             string key = label;
-            if (!numberText.ContainsKey(key)) numberText[key]=value.ToString("F2",CultureInfo.InvariantCulture);
+            if (!numberText.ContainsKey(key) || GUI.GetNameOfFocusedControl()!=key)
+                numberText[key]=value.ToString("F2",CultureInfo.InvariantCulture);
+            GUI.SetNextControlName(key);
             string entered=GUILayout.TextField(numberText[key],GUILayout.Width(100));
             if (entered!=numberText[key]) numberText[key]=entered;
             if (GUILayout.Button("✓",GUILayout.Width(24)) && double.TryParse(entered,NumberStyles.Float,CultureInfo.InvariantCulture,out double parsed))
             {
                 value=SimulationCore.Clamp(parsed,min,max);
                 numberText[key]=value.ToString("F2",CultureInfo.InvariantCulture);
+                if (label!="FOV" && label!="Exposure") autopilot=false;
                 UpdateModel(true);
             }
             GUILayout.EndHorizontal();
