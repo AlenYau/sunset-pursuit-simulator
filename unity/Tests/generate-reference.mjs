@@ -14,6 +14,7 @@ const cases = [
   ['date line crossing', '2026-09-22T05:00:00Z', 40, 179.8, 59000, 1100, 90, 0, 'greatCircle', 3600],
   ['climb above clouds', '2026-09-22T17:00:00Z', 52, -4, 10000, 450, 270, 1800, 'rhumb', 600],
   ['polar great circle', '2026-03-20T12:00:00Z', 89.9, -120, 65000, 1800, 10, 0, 'greatCircle', 1200],
+  ['polar west accelerated', '2026-03-20T18:00:00Z', 89.9, 30, 35000, 450, 270, 0, 'rhumb', 3600],
 ];
 
 const rows = cases.map(([name, utc, latitude, longitude, altitudeFt, groundSpeedKt, headingDeg, verticalFpm, routeMode, stepSeconds]) => {

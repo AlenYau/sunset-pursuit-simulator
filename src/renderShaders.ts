@@ -21,7 +21,8 @@ uniform vec3 uRunwaySide;
 uniform float uRunwayLength;
 uniform float uAltitude;
 uniform float uRadius;
-uniform float uTime;
+uniform vec3 uWavePhase;
+uniform float uDitherPhase;
 uniform float uCoverage;
 uniform float uExposure;
 uniform float uEye;
@@ -151,8 +152,8 @@ vec3 rayDirection(){vec4 q=uInvProjection*vec4(vUv*2.0-1.0,1.0,1.0);return norma
 vec3 ocean(vec3 sky,vec3 d,float t){
  vec2 p=earthPattern(earthPoint(d*t));
  float fade=exp(-t/165000.0);
- float w1=sin(p.x*.0017+uTime*.22)*cos(p.y*.0012-uTime*.17);
- float w2=sin(p.x*.0031-p.y*.0007-uTime*.31);
+ float w1=sin(p.x*.0017+uWavePhase.x)*cos(p.y*.0012-uWavePhase.y);
+ float w2=sin(p.x*.0031-p.y*.0007-uWavePhase.z);
  vec2 wobble=vec2(w1,w2)*.006*fade;
  vec2 reflectedUv=vec2(clamp(vUv.x+wobble.x,0.0,1.0),clamp(2.0*uHorizonUV-vUv.y+wobble.y,0.0,1.0));
  vec3 reflected=texture2D(uSky,reflectedUv).rgb;
@@ -261,6 +262,6 @@ void main(){
  float glare=exp(-angle*75.0)*.035+exp(-angle*18.0)*.007;
  linear+=vec3(1.0,.72,.42)*glare*smoothstep(-.08,.0,sunHeight);
  vec3 color=linearToSRGB(aces(max(linear,0.0)));
- float grain=(hash12(gl_FragCoord.xy+fract(uTime)*vec2(41.7,23.9))-.5)/255.0;
+ float grain=(hash12(gl_FragCoord.xy+uDitherPhase*vec2(41.7,23.9))-.5)/255.0;
  gl_FragColor=vec4(clamp(color+grain,0.0,1.0),1.0);
 }`;

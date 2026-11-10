@@ -33,6 +33,7 @@ namespace SunsetPursuit
         private const double A = 6378137.0;
         private const double F = 1.0 / 298.257223563;
         private const double E2 = F * (2.0 - F);
+        private static readonly double E = Math.Sqrt(E2);
 
         public static double Clamp(double value, double lo, double hi) => Math.Min(hi, Math.Max(lo, value));
         public static double NormalizeLongitude(double value) => ((value + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
@@ -101,18 +102,77 @@ namespace SunsetPursuit
         {
             if (seconds == 0.0) return state;
             double distance = state.GroundSpeedKt * KnotToMetersPerSecond * seconds;
-            int steps = state.RouteMode == RouteMode.ConstantHeading ? Math.Max(1, (int)Math.Ceiling(Math.Abs(distance) / 20000.0)) : 1;
-            for (int i = 0; i < steps; ++i)
+            if (distance != 0.0 && state.RouteMode == RouteMode.ConstantHeading)
             {
-                DirectGeodesic(state.Latitude, state.Longitude, state.HeadingDeg, distance / steps,
+                double bearing = state.HeadingDeg * Rad;
+                double northDistance = distance * Math.Cos(bearing);
+                double phi1 = state.Latitude * Rad;
+                double poleDistance = (northDistance * state.Latitude >= 0.0)
+                    ? MeridianArc(Math.PI / 2.0) - Math.Abs(MeridianArc(phi1)) : double.PositiveInfinity;
+                if (Math.Abs(northDistance) >= poleDistance - 0.001)
+                    state.RouteMode = RouteMode.GreatCircle;
+                else
+                {
+                    double phi2 = phi1;
+                    if (Math.Abs(northDistance) > 1e-7)
+                    {
+                        double target = MeridianArc(phi1) + northDistance;
+                        phi2 = phi1 + northDistance / EarthRadiusAt(state.Latitude, 0.0);
+                        for (int i = 0; i < 6; ++i)
+                        {
+                            double sin = Math.Sin(phi2);
+                            double d = Math.Sqrt(1.0 - E2 * sin * sin);
+                            double meridianRadius = A * (1.0 - E2) / (d * d * d);
+                            phi2 -= (MeridianArc(phi2) - target) / meridianRadius;
+                        }
+                    }
+                    double deltaLon;
+                    if (Math.Abs(northDistance) < 1e-7)
+                    {
+                        double sin = Math.Sin(phi1);
+                        double parallelRadius = A * Math.Cos(phi1) / Math.Sqrt(1.0 - E2 * sin * sin);
+                        deltaLon = distance * Math.Sin(bearing) / parallelRadius;
+                    }
+                    else
+                    {
+                        double deltaPhi = phi2 - phi1, mid = (phi1 + phi2) / 2.0;
+                        double sin = Math.Sin(mid);
+                        double deltaPsi = Math.Abs(deltaPhi) < 1e-7
+                            ? deltaPhi * (1.0 - E2) / (Math.Cos(mid) * (1.0 - E2 * sin * sin))
+                            : IsometricLatitude(phi2) - IsometricLatitude(phi1);
+                        deltaLon = Math.Tan(bearing) * deltaPsi;
+                    }
+                    state.Latitude = phi2 / Rad;
+                    state.Longitude = NormalizeLongitude(state.Longitude + deltaLon / Rad);
+                }
+            }
+            if (distance != 0.0 && state.RouteMode == RouteMode.GreatCircle)
+            {
+                DirectGeodesic(state.Latitude, state.Longitude, state.HeadingDeg, distance,
                     out double lat, out double lon, out double finalBearing);
                 state.Latitude = lat;
                 state.Longitude = NormalizeLongitude(lon);
-                if (state.RouteMode == RouteMode.GreatCircle) state.HeadingDeg = NormalizeHeading(finalBearing);
+                state.HeadingDeg = NormalizeHeading(finalBearing);
             }
             state.AltitudeFt = Clamp(state.AltitudeFt + state.VerticalFpm * seconds / 60.0, 0.0, MaxAltitudeFt);
             state.Utc = state.Utc.AddSeconds(seconds);
             return state;
+        }
+
+        private static double IsometricLatitude(double phi)
+        {
+            double s = E * Math.Sin(phi);
+            return Math.Log(Math.Tan(Math.PI / 4.0 + phi / 2.0)) - E * Math.Log((1.0 + s) / (1.0 - s)) / 2.0;
+        }
+
+        private static double MeridianArc(double phi)
+        {
+            double e4 = E2 * E2, e6 = e4 * E2, e8 = e4 * e4;
+            return A * ((1.0 - E2 / 4.0 - 3.0 * e4 / 64.0 - 5.0 * e6 / 256.0 - 175.0 * e8 / 16384.0) * phi
+                - (3.0 * E2 / 8.0 + 3.0 * e4 / 32.0 + 45.0 * e6 / 1024.0 + 105.0 * e8 / 4096.0) * Math.Sin(2.0 * phi)
+                + (15.0 * e4 / 256.0 + 45.0 * e6 / 1024.0 + 525.0 * e8 / 16384.0) * Math.Sin(4.0 * phi)
+                - (35.0 * e6 / 3072.0 + 175.0 * e8 / 12288.0) * Math.Sin(6.0 * phi)
+                + 315.0 * e8 / 131072.0 * Math.Sin(8.0 * phi));
         }
 
         // Vincenty's WGS84 direct solution. The direct problem converges reliably

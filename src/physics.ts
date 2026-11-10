@@ -7,6 +7,8 @@ export const SUN_RADIUS_DEG = 0.2666;
 export const MAX_ALTITUDE_FT = 360000;
 export const MAX_GROUND_SPEED_KT = 4000;
 const RAD = Math.PI / 180;
+const WGS84_E2 = 0.0066943799901413165;
+const WGS84_E = Math.sqrt(WGS84_E2);
 export type RouteMode = 'rhumb' | 'greatCircle';
 export type Flight = { lat: number; lon: number; altitudeFt: number; speedKt: number; heading: number; verticalFpm: number; routeMode: RouteMode };
 export type Sim = Flight & { timeMs: number };
@@ -56,16 +58,47 @@ export function solarAt(state: Sim): Omit<Solar, 'solarRate' | 'status'> {
 export function advance(state: Sim, seconds: number): Sim {
   if (seconds === 0) return state;
   const distance = state.speedKt * KNOT_TO_MPS * seconds;
-  let lat = state.lat, lon = state.lon, heading = state.heading;
-  // Reapply the commanded bearing over short geodesic legs for constant-heading (rhumb-like) travel.
-  const steps = state.routeMode === 'rhumb' ? Math.max(1, Math.ceil(Math.abs(distance) / 20000)) : 1;
-  for (let i = 0; i < steps; i++) {
-    const p = geodesic.Geodesic.WGS84.Direct(lat, lon, state.heading, distance / steps);
-    lat = p.lat2!;
-    lon = normalizeLon(p.lon2!);
-    if (state.routeMode === 'greatCircle') heading = normalizeHeading(p.azi2!);
+  let lat = state.lat, lon = state.lon, heading = state.heading, routeMode = state.routeMode;
+  if (distance !== 0) {
+    const bearing = heading * RAD;
+    if (routeMode === 'rhumb') {
+      const northDistance = distance * Math.cos(bearing);
+      const towardPole = northDistance * lat >= 0;
+      const poleDistance = towardPole ? geodesic.Geodesic.WGS84.Inverse(lat, lon, Math.sign(lat || northDistance) * 90, lon).s12! : Infinity;
+      if (Math.abs(northDistance) >= poleDistance - 0.001) {
+        // A non-meridional rhumb has no defined longitude at the pole.
+        // Continue as a great circle so the aircraft never sticks there.
+        routeMode = 'greatCircle';
+      } else {
+        const meridian = Math.abs(northDistance) > 1e-7
+          ? geodesic.Geodesic.WGS84.Direct(lat, lon, northDistance > 0 ? 0 : 180, Math.abs(northDistance))
+          : null;
+        const lat2 = meridian ? meridian.lat2! : lat;
+        const phi1 = lat * RAD, phi2 = lat2 * RAD;
+        if (Math.abs(northDistance) < 1e-7) {
+          // Due east/west follows the WGS84 parallel exactly, regardless of step size.
+          const n = 6378137 / Math.sqrt(1 - WGS84_E2 * Math.sin(phi1) ** 2);
+          lon = normalizeLon(lon + distance * Math.sin(bearing) / (n * Math.cos(phi1) * RAD));
+        } else {
+          const psi = (phi: number) => Math.asinh(Math.tan(phi)) - WGS84_E * Math.atanh(WGS84_E * Math.sin(phi));
+          const deltaPhi = phi2 - phi1;
+          const mid = (phi1 + phi2) / 2;
+          const deltaPsi = Math.abs(deltaPhi) < 1e-7
+            ? deltaPhi * (1 - WGS84_E2) / (Math.cos(mid) * (1 - WGS84_E2 * Math.sin(mid) ** 2))
+            : psi(phi2) - psi(phi1);
+          lon = normalizeLon(lon + Math.tan(bearing) * deltaPsi / RAD);
+        }
+        lat = lat2;
+      }
+    }
+    if (routeMode === 'greatCircle') {
+      const p = geodesic.Geodesic.WGS84.Direct(lat, lon, heading, distance);
+      lat = p.lat2!;
+      lon = normalizeLon(p.lon2!);
+      heading = normalizeHeading(p.azi2!);
+    }
   }
-  return { ...state, lat, lon, heading, altitudeFt: clamp(state.altitudeFt + state.verticalFpm * seconds / 60, 0, MAX_ALTITUDE_FT), timeMs: state.timeMs + seconds * 1000 };
+  return { ...state, lat, lon, heading, routeMode, altitudeFt: clamp(state.altitudeFt + state.verticalFpm * seconds / 60, 0, MAX_ALTITUDE_FT), timeMs: state.timeMs + seconds * 1000 };
 }
 export function solarMetrics(state: Sim): Solar {
   const now = solarAt(state);

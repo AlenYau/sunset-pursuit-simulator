@@ -55,7 +55,7 @@
     "verticalRate": -0.00048660801872557613,
     "stepSeconds": 3600,
     "nextLatitude": 0,
-    "nextLongitude": -14.973119155704353,
+    "nextLongitude": -14.973119155704126,
     "nextAltitudeFt": 35000,
     "sunsetUtc": null
   },
@@ -72,10 +72,10 @@
     "azimuth": 268.1707459728845,
     "apparentElevation": 0.544122076584862,
     "horizonDip": 1.7680246366832089,
-    "verticalRate": -0.0032547906243327596,
+    "verticalRate": -0.0032547678495569166,
     "stepSeconds": 3600,
-    "nextLatitude": 84.98357787383667,
-    "nextLongitude": -12.306144303974293,
+    "nextLatitude": 85,
+    "nextLongitude": -12.32726094651423,
     "nextAltitudeFt": 10000,
     "sunsetUtc": null
   },
@@ -152,10 +152,10 @@
     "azimuth": 256.392068024022,
     "apparentElevation": 10.619881039559012,
     "horizonDip": 1.7692545778689015,
-    "verticalRate": 0.12738787952079988,
+    "verticalRate": 0.1273879826663986,
     "stepSeconds": 600,
-    "nextLatitude": 51.99751982733896,
-    "nextLongitude": -6.022422708586191,
+    "nextLatitude": 52,
+    "nextLongitude": -6.022481252801754,
     "nextAltitudeFt": 28000,
     "sunsetUtc": null
   },
@@ -177,6 +177,26 @@
     "nextLatitude": 80.14887882082839,
     "nextLongitude": 49.900005326181144,
     "nextAltitudeFt": 65000,
+    "sunsetUtc": null
+  },
+  {
+    "name": "polar west accelerated",
+    "utc": "2026-03-20T18:00:00Z",
+    "latitude": 89.9,
+    "longitude": 30,
+    "altitudeFt": 35000,
+    "groundSpeedKt": 450,
+    "headingDeg": 270,
+    "verticalFpm": 0,
+    "routeMode": "rhumb",
+    "azimuth": 298.1591344390457,
+    "apparentElevation": 0.17916998796237982,
+    "horizonDip": 3.305989786272089,
+    "verticalRate": 0.09727475953790599,
+    "stepSeconds": 3600,
+    "nextLatitude": 89.9,
+    "nextLongitude": 74.89694006225182,
+    "nextAltitudeFt": 35000,
     "sunsetUtc": null
   }
 ]

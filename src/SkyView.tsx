@@ -48,7 +48,7 @@ export function SkyView({ state, solar, cameraAz, cameraEl, quality, clouds, mod
   cloudVolume.generateMipmaps=false;
   cloudVolume.minFilter=THREE.LinearFilter;
   cloudVolume.magFilter=THREE.LinearFilter;
-  const composite=new THREE.ShaderMaterial({vertexShader:screenVertex,fragmentShader:compositeFragment,depthTest:false,depthWrite:false,defines:{CLOUD_STEPS:cloudSteps[quality]},uniforms:{uSky:{value:target.texture},uLandMask:{value:landMask},uEarthColor:{value:earthColor},uCloudVolume:{value:cloudVolume},uInvProjection:{value:new THREE.Matrix4()},uCameraWorld:{value:new THREE.Matrix4()},uEcef:{value:new THREE.Vector3()},uEast:{value:new THREE.Vector3()},uUp:{value:new THREE.Vector3()},uSouth:{value:new THREE.Vector3()},uSun:{value:new THREE.Vector3(0,0,-1)},uRunwayOrigin:{value:new THREE.Vector3()},uRunwayForward:{value:new THREE.Vector3()},uRunwaySide:{value:new THREE.Vector3()},uRunwayLength:{value:0},uAltitude:{value:0},uRadius:{value:6371000},uTime:{value:0},uCoverage:{value:.48},uExposure:{value:1},uEye:{value:1},uHorizonUV:{value:.5},uResolution:{value:new THREE.Vector2(1,1)},uCloudStepBudget:{value:cloudSteps[quality]}}});
+  const composite=new THREE.ShaderMaterial({vertexShader:screenVertex,fragmentShader:compositeFragment,depthTest:false,depthWrite:false,defines:{CLOUD_STEPS:cloudSteps[quality]},uniforms:{uSky:{value:target.texture},uLandMask:{value:landMask},uEarthColor:{value:earthColor},uCloudVolume:{value:cloudVolume},uInvProjection:{value:new THREE.Matrix4()},uCameraWorld:{value:new THREE.Matrix4()},uEcef:{value:new THREE.Vector3()},uEast:{value:new THREE.Vector3()},uUp:{value:new THREE.Vector3()},uSouth:{value:new THREE.Vector3()},uSun:{value:new THREE.Vector3(0,0,-1)},uRunwayOrigin:{value:new THREE.Vector3()},uRunwayForward:{value:new THREE.Vector3()},uRunwaySide:{value:new THREE.Vector3()},uRunwayLength:{value:0},uAltitude:{value:0},uRadius:{value:6371000},uWavePhase:{value:new THREE.Vector3()},uDitherPhase:{value:0},uCoverage:{value:.48},uExposure:{value:1},uEye:{value:1},uHorizonUV:{value:.5},uResolution:{value:new THREE.Vector2(1,1)},uCloudStepBudget:{value:cloudSteps[quality]}}});
   const screen=new THREE.Scene(),screenCam=new THREE.Camera();screenCam.position.z=1;
   const finalQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),composite);finalQuad.frustumCulled=false;screen.add(finalQuad);
   const resize=()=>{const w=Math.max(1,el.clientWidth),h=Math.max(1,el.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);const size=new THREE.Vector2();renderer.getDrawingBufferSize(size);target.setSize(size.x,size.y);composite.uniforms.uResolution.value.copy(size);};
@@ -87,7 +87,10 @@ export function SkyView({ state, solar, cameraAz, cameraEl, quality, clouds, mod
   e.composite.uniforms.uSun.value.copy(sunLocal);
   e.composite.uniforms.uAltitude.value=h;
   e.composite.uniforms.uRadius.value=earthRadiusAt(state.lat,solar.azimuth);
-  e.composite.uniforms.uTime.value=state.timeMs/1000;
+  // Keep shader phases small: Unix seconds lose sub-minute precision in GPU float32.
+  const wavePeriod=Math.PI*2,seconds=state.timeMs/1000;
+  e.composite.uniforms.uWavePhase.value.set((seconds*.22)%wavePeriod,(seconds*.17)%wavePeriod,(seconds*.31)%wavePeriod);
+  e.composite.uniforms.uDitherPhase.value=((seconds%1)+1)%1;
   e.composite.uniforms.uCoverage.value=coverValues[clouds];
   e.composite.uniforms.uExposure.value=exposure;
   e.composite.uniforms.uEye.value=mode==='eye'?1:0;
